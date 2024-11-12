@@ -37,22 +37,19 @@ def gradient_kernel(kvec, direction, order=1):
     wts: array
         Complex kernel values
     """
+    ki = kvec[direction]
     if order == 0:
-        wts = 1j * kvec[direction]
-        wts = jnp.squeeze(wts)
-        wts[len(wts) // 2] = 0
-        wts = wts.reshape(kvec[direction].shape)
-        return wts
-    else:
-        w = kvec[direction]
-        a = 1 / 6.0 * (8 * jnp.sin(w) - jnp.sin(2 * w))
-        wts = a * 1j
-        return wts
+        pass
+    elif order ==1:
+        ki = (8. * np.sin(ki) - np.sin(2 * ki)) / 6.
+    return 1j * ki
 
 
-def invlaplace_kernel(kvec):
+def invlaplace_kernel(kvec, order=1):
     """
-    Compute the inverse Laplace kernel
+    Compute the inverse Laplace kernel.
+
+    cf. [Feng+2016](https://arxiv.org/pdf/1603.00476)
 
     Parameters
     -----------
@@ -64,9 +61,12 @@ def invlaplace_kernel(kvec):
     wts: array
         Complex kernel values
     """
-    kk = sum(ki**2 for ki in kvec)
-    kk_nozeros = jnp.where(kk==0, 1, kk) 
-    return - jnp.where(kk==0, 0, 1 / kk_nozeros)
+    if order == 0:
+        kk = sum(ki**2 for ki in kvec)
+    elif order == 1:
+        kk = sum((ki * np.sinc(ki / (2 * np.pi)))**2 for ki in kvec)
+    kk_nozeros = np.where(kk==0, 1, kk) 
+    return - np.where(kk==0, 0, 1 / kk_nozeros)
 
 
 def longrange_kernel(kvec, r_split):
@@ -111,9 +111,10 @@ def cic_compensation(kvec):
     wts: array
         Complex kernel values
     """
-    kwts = [np.sinc(kvec[i] / (2 * np.pi)) for i in range(3)]
-    wts = (kwts[0] * kwts[1] * kwts[2])**(-2)
-    return wts
+    wts = 1
+    for ki in kvec:
+        wts = wts * np.sinc(ki / (2 * np.pi))
+    return wts**-2
 
 
 def PGD_kernel(kvec, kl, ks):
