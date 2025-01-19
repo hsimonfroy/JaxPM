@@ -1,6 +1,7 @@
 import jax.numpy as np
 from jax_cosmo.background import *
-from jax_cosmo.scipy.interpolate import interp
+# from jax_cosmo.scipy.interpolate import interp
+from jax.numpy import interp # NOTE: changed interp to jnp.interp
 from jax_cosmo.scipy.ode import odeint
 
 
@@ -587,5 +588,5 @@ def dGf2a(cosmo, a):
     cache = cosmo._workspace['background.growth_factor']
     f2p = cache['h2'] / cache['a'] * cache['g2']
     f2p = interp(np.log(a), np.log(cache['a']), f2p)
-    Ea = E(cosmo, a)
+    Ea = E(cosmo, a) # NOTE: changed E into Ea
     return (f2p * a**3 * Ea + D2f * a**3 * dEa(cosmo, a) + 3 * a**2 * Ea * D2f)
